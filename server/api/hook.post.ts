@@ -1,5 +1,7 @@
-import { ChatGPTAPI } from 'chatgpt'
 import qs from 'query-string';
+
+import Language from '../Language';
+import Generate from '../Generate';
 
 const isArabic = (text: string) => {
     var arabic = /[\u0600-\u06FF]/;
@@ -7,32 +9,30 @@ const isArabic = (text: string) => {
 }
 
 export default defineEventHandler(async (event) => {
-    const SERVER_URL = "https://formal-email-bot.vercel.app/api/hook"
     const TELEGRAM_API = `https://api.telegram.org/bot${process.env.BOT_TOKEN}`
 
     // Message is the email body
-    const { message: { chat: { id }, text } } = await readBody(event)
+    const { message, callback_query } = await readBody(event)
 
-    const rewriteMessage = isArabic(text) ? "اعد كتابتها بصيغة رسالة بريد رسمية" : "Rewrite in formal Email."
+    const chat_id = message?.chat?.id ?? callback_query?.message?.chat?.id
+    const query_id = callback_query?.id
 
-    // ChatGPT API
-    const api = new ChatGPTAPI({
-        apiKey: process.env.OPENAI_API_KEY || '',
-    })
 
-    // Send message to ChatGPT API
-    const res = await api.sendMessage(text + `\n\n\n ${rewriteMessage}`, {
-        timeoutMs: 2 * 60 * 1000
-    })
-    // res.text
 
-    // Format message
-    const messageQuery = qs.stringify({
-        text: res.text
-    })
 
-    // Send message to Telegram
-    await $fetch(`${TELEGRAM_API}/sendMessage?chat_id=${id}&${messageQuery}`, { method: "POST" })
+
+    if (callback_query?.data) {
+        await $fetch(`${TELEGRAM_API}/sendMessage?chat_id=${chat_id}&${await Generate(callback_query)}`, { method: "POST" })
+        await $fetch(`${TELEGRAM_API}/answerCallbackQuery?callback_query_id=${query_id}`, { method: "POST" })
+
+    } else {
+        await $fetch(`${TELEGRAM_API}/sendMessage?chat_id=${chat_id}&${Language(message)}`, { method: "POST" })
+    }
+
+
+
+
+
 
     return {
         api: "test"

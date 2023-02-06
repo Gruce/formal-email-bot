@@ -2,12 +2,11 @@ import qs from 'query-string';
 import { ChatGPTAPI } from 'chatgpt'
 
 export default async function (callback_query: any) {
-    const { message: { data_message_id }, data } = callback_query;
+    const { message: { data_message_id, text }, data } = callback_query;
 
-    const { language, text } = JSON.parse(data)
+    const [language, message_id] = data.split('@')
 
     const rewriteMessage = language == "ar" ? "اعد كتابتها بصيغة رسالة بريد رسمية" : "Rewrite in formal Email."
-
 
     // ChatGPT API
     const api = new ChatGPTAPI({
@@ -21,7 +20,7 @@ export default async function (callback_query: any) {
 
     const msg = qs.stringify({
         text: res.text,
-        reply_to_message_id: data_message_id,
+        // reply_to_message_id: message_id,
     })
 
     return msg

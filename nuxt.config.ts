@@ -4,5 +4,5 @@ export default defineNuxtConfig({
         public: {
             gptApi: process.env.OPENAI_API_KEY
         }
-    }
+    },
 })
